@@ -1,17 +1,26 @@
+function countryFlag(country){
+  const code=country.toUpperCase();
+  const flag =Array.from(code).map(letter => String.fromCodePoint(letter.charCodeAt(0) + 127397)).join('');
+  
+  return flag;
+}
+
 const player=document.getElementById("player");
 const faviconEl = document.getElementById("player-favicon");
 const countryEl = document.getElementById("player-country");
 const titleEl = document.getElementById("player-title");
 const toggleBtn = document.getElementById("player-toggle");
 
-function playStation(url, name, favicon, country) {
+let grouped={};
+
+function playStation(url, name, favicon, country, countrycode){
     player.src=url;
     player.play();
     
     favicon=favicon || "default_icon.png";
     faviconEl.src=favicon;
     titleEl.textContent=name;
-    countryEl.textContent=country;
+    countryEl.innerHTML=`<span class="flag">${countryFlag(countrycode)}</span> ${country}`;
 
     toggleBtn.textContent="⏸️";
 
@@ -31,7 +40,7 @@ function playStation(url, name, favicon, country) {
     }
 }
 
-function loadCountries() {
+function loadCountries(){
     document.getElementById("countries").innerHTML = "Loading...";
 
     fetch("https://de1.api.radio-browser.info/json/countries")
@@ -51,20 +60,30 @@ function loadCountries() {
         });
 
         showCountries();
+        handleQueryString();
     });
 }
 
-function showCountries() {
+function showCountries(){
     document.getElementById('stations').classList.add('hide');
     const container=document.getElementById("countries");
     container.classList.remove('hide');
     container.innerHTML="";
 
+    const card=document.createElement("div");
+    card.className="country";
+
+    card.innerHTML=`<span class="favourite fa fa-star checked favourited"></span> Favourited Stations (${favouriteStations.length})`;
+
+    card.onclick=()=>showStations("favourite");
+
+    container.appendChild(card);
+
     Object.keys(grouped).sort().forEach(country => {
         const card=document.createElement("div");
         card.className="country";
 
-        card.textContent=`${grouped[country].name} (${grouped[country].stationCount})`;
+        card.innerHTML=`<span class="flag">${countryFlag(country)}</span> ${grouped[country].name} (${grouped[country].stationCount})`;
 
         card.onclick=()=>showStations(country);
 
@@ -73,7 +92,11 @@ function showCountries() {
 }
 
 // country is iso
-function showStations(country) {
+function showStations(country){
+    const url=new URL(window.location.href);
+    url.searchParams.set('stations', country);
+    window.history.pushState(null, '', url.toString());
+
     document.getElementById('countries').classList.add('hide');
     const container=document.getElementById("stations");
     container.classList.remove('hide');
@@ -85,30 +108,51 @@ function showStations(country) {
 
     back.onclick = () => {
         showCountries();
+        const url=new URL(window.location.href);
+        url.searchParams.delete('stations');
+        window.history.pushState(null, '', url.toString());
     };
 
     container.appendChild(back);
 
-    grouped[country].stations=[];
-    fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${country}`)
-    .then(res => res.json())
-    .then(data => {
-        data.forEach(station => {
+    if (country=="favourite"){
+        favouriteStations.forEach(station => {
             if (!station.url_resolved) return;
             const card = document.createElement("div");
             card.className = "station";
 
-            card.innerHTML = `
+            const play = document.createElement('div');
+            play.classList='play';
+            play.innerHTML = `
             <img class="station-icon" src="${station.favicon || 'default_icon.png'}" onerror="this.src='default_icon.png'">
             <div>
             <div class="station-name">${station.name}</div>
-            <div class="station-meta">${station.country} • ${station.bitrate} kbps</div>
+            <div class="station-meta"><span class="flag">${countryFlag(station.countrycode)}</span> ${station.country} • ${station.bitrate} kbps</div>
             </div>
             `;
+            play.onclick=function(){
+                playStation(station.url_resolved,station.name,station.favicon,station.country,station.countrycode);
+            }
+            card.appendChild(play);
 
-            card.onclick = () => {
-            playStation(station.url_resolved, station.name, station.favicon, station.country);
-            };
+            const favourite=document.createElement('span');
+
+            if (stationIncludes(favouriteStations,station)){
+                favourite.classList='favourite fa fa-star checked favourited';
+            }else{
+                favourite.classList='favourite fa fa-star checked';
+            }
+
+            favourite.onclick=()=>{
+                if (favouriteStation(station)){
+                    favourite.classList.add('favourited');
+                }else{
+                    favourite.classList.remove('favourited');
+                }
+                showStations("favourite");
+            }
+
+            card.appendChild(favourite);
 
             container.appendChild(card);
             grouped[country].stations.push({
@@ -118,8 +162,75 @@ function showStations(country) {
                 url_resolved: station.url_resolved
             })
         })
-    })
-    grouped[country].stationcount=grouped[country].stations.length;
+    }else{
+        grouped[country].stations=[];
+        fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${country}`)
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(station => {
+                if (!station.url_resolved) return;
+                const card = document.createElement("div");
+                card.className = "station";
+
+                const play = document.createElement('div');
+                play.classList='play';
+                play.innerHTML = `
+                <img class="station-icon" src="${station.favicon || 'default_icon.png'}" onerror="this.src='default_icon.png'">
+                <div>
+                <div class="station-name">${station.name}</div>
+                <div class="station-meta"><span class="flag">${countryFlag(country)}</span> ${station.country} • ${station.bitrate} kbps</div>
+                </div>
+                `;
+                play.onclick=function(){
+                    playStation(station.url_resolved,station.name,station.favicon,station.country,country);
+                }
+                card.appendChild(play);
+
+                const favourite=document.createElement('span');
+
+                if (stationIncludes(favouriteStations,station)){
+                    favourite.classList='favourite fa fa-star checked favourited';
+                }else{
+                    favourite.classList='favourite fa fa-star checked';
+                }
+
+                favourite.onclick=()=>{
+                    if (favouriteStation(station)){
+                        favourite.classList.add('favourited');
+                    }else{
+                        favourite.classList.remove('favourited');
+                    }
+                }
+
+                card.appendChild(favourite);
+
+                container.appendChild(card);
+                grouped[country].stations.push({
+                    name: station.name,
+                    bitrate: station.bitrate,
+                    favicon: station.favicon || "default_icon.png",
+                    url_resolved: station.url_resolved
+                })
+            })
+        })
+        grouped[country].stationcount=grouped[country].stations.length;
+    }
+}
+
+// query strings
+/*
+stations=countryexactcode|"favourite"
+*/
+
+let queryHandled=false;
+function handleQueryString(){
+    if (queryHandled) return;
+    queryHandled=true;
+    const params = new URLSearchParams(window.location.search);
+    const country = params.get('stations');
+    if (country){
+        showStations(country);
+    }
 }
 
 loadCountries();

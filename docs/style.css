@@ -83,12 +83,20 @@ input{
     cursor: pointer;
 }
 
-.station {
+.station{
     font-family: 'Lexend';
     background: #FFDBFD;
     padding: 12px;
     margin: 8px 0;
     border-radius: 12px;
+    color: rgb(124, 124, 124);
+    cursor: pointer;
+    display: flex;
+}
+
+.station .play{
+    font-family: 'Lexend';
+    background: #FFDBFD;
     color: rgb(124, 124, 124);
     cursor: pointer;
     display: flex;
@@ -173,4 +181,16 @@ input{
 *::before,
 *::after {
     box-sizing: border-box;
+}
+
+.station div{
+    width: 100%;
+}
+
+.favourite{
+    width: min-content;
+}
+
+.favourited{
+    color: rgb(255, 187, 0);
 }
