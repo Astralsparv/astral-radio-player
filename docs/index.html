@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Astral Radio Player</title>
+    <link rel="shortcut icon" href="default_icon.png">
+</head>
+<body>
+    <audio id="player"></audio>
+    <div class="list" id="countries"></div>
+    <div class="list hide" id="stations"></div>
+
+    <div id="mini-player">
+        <img id="player-favicon" src="" alt="favicon" onerror="this.src='default_icon.png'">
+        <div style="flex-grow:1; overflow:hidden;">
+            <div id="player-title">No Station</div>
+            <div id="player-country">No Country</div>
+        </div>
+        <button id="player-toggle">▶️</button>
+    </div>
+
+    <script src="index.js"></script>
+</body>
+</html>

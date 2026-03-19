@@ -1,0 +1,176 @@
+/* https://colorhunt.co/palette/6367ff8494ffc9beffffdbfd */
+
+body{
+    background: #8494FF;
+    color: rgb(255, 255, 255);
+    padding: 10px;
+    font-family: 'Lexend';
+}
+
+@font-face{
+    font-family: 'Lexend';
+    src: url(Lexend-VariableFont_wght.ttf);
+}
+
+h1{
+    text-align: center;
+    font-family: 'Lexend';
+}
+
+.list{
+    background: #C9BEFF;
+    padding: 14px;
+    border-radius: 12px;
+    margin: 6px;
+    font-weight: bold;
+    width: 100%;
+    margin-bottom: 60px;
+}
+
+.hide{
+    display: none;
+}
+
+button{
+    width: 100%;
+    padding: 10px;
+    margin: 4px 0;
+    background: #FFDBFD;
+    color: rgb(124, 124, 124);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+input{
+    width: 100%;
+    padding: 12px;
+    margin: 12px;
+    border-radius: 10px;
+    border: none;
+    margin-bottom: 10px;
+    background: #C9BEFF;
+    color: rgb(255, 255, 255);
+}
+
+#player{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
+
+#container{
+    display: flex;
+    gap: 20px;
+}
+
+#countries, #stations{
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+
+.country {
+    font-family: 'Lexend';
+    background: #FFDBFD;
+    padding: 14px;
+    border-radius: 12px;
+    margin: 6px 0;
+    font-weight: bold;
+    color: rgb(124, 124, 124);
+    cursor: pointer;
+}
+
+.station {
+    font-family: 'Lexend';
+    background: #FFDBFD;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 12px;
+    color: rgb(124, 124, 124);
+    cursor: pointer;
+    display: flex;
+}
+
+.station-icon{
+    width:40px;
+    height:40px;
+    border-radius:6px;
+    margin-right:10px;
+}
+
+#countries::-webkit-scrollbar,
+#stations::-webkit-scrollbar {
+    width: 8px;
+}
+
+#countries::-webkit-scrollbar-thumb,
+#stations::-webkit-scrollbar-thumb {
+    background: #FFDBFD;
+    border-radius: 4px;
+}
+
+#countries::-webkit-scrollbar-track,
+#stations::-webkit-scrollbar-track {
+    background: #C9BEFF;
+}
+
+#mini-player{
+    display:flex;
+    align-items:center;
+    padding:10px;
+    background:#FFDBFD;
+    border-radius:12px;
+    position:fixed;
+    bottom:10px;
+    left:50%;
+    transform: translateX(-50%);
+    width:fit-content;
+    max-width: 100%;
+}
+
+#player-favicon{
+    width:40px;
+    height:40px;
+    border-radius:6px;
+    margin-right:10px;
+    object-fit:cover;
+}
+
+#player-title{
+    font-weight:bold;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    color: rgb(60, 60, 60);
+}
+
+#player-country{
+    font-weight:bold;
+    font-size: smaller;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    color: rgb(89, 89, 89);
+}
+
+#player-toggle{
+    margin-left:10px;
+    border:none;
+    border-radius:6px;
+    background:#C9BEFF;
+    cursor:pointer;
+    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
