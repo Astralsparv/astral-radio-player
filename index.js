@@ -31,22 +31,23 @@ function playStation(url, name, favicon, country) {
     }
 }
 
-function loadAll() {
+function loadCountries() {
     document.getElementById("countries").innerHTML = "Loading...";
 
-    fetch("https://de1.api.radio-browser.info/json/stations")
+    fetch("https://de1.api.radio-browser.info/json/countries")
     .then(res => res.json())
     .then(data => {
         grouped = {};
 
-        data.forEach(station => {
-            if (!station.url_resolved || !station.country) return;
+        data.forEach(country => {
+            if (!country.name || !country.iso_3166_1) return;
 
-            if (!grouped[station.country]) {
-                grouped[station.country] = [];
+            if (!grouped[country.iso_3166_1]) {
+                grouped[country.iso_3166_1] = [];
+                grouped[country.iso_3166_1].name=country.name;
+                grouped[country.iso_3166_1].stationCount=country.stationcount;
+                grouped[country.iso_3166_1].stations=[];
             }
-
-            grouped[station.country].push(station);
         });
 
         showCountries();
@@ -63,7 +64,7 @@ function showCountries() {
         const card=document.createElement("div");
         card.className="country";
 
-        card.textContent=`${country} (${grouped[country].length})`;
+        card.textContent=`${grouped[country].name} (${grouped[country].stationCount})`;
 
         card.onclick=()=>showStations(country);
 
@@ -71,6 +72,7 @@ function showCountries() {
     });
 }
 
+// country is iso
 function showStations(country) {
     document.getElementById('countries').classList.add('hide');
     const container=document.getElementById("stations");
@@ -87,27 +89,40 @@ function showStations(country) {
 
     container.appendChild(back);
 
-    grouped[country].slice(0,10000).forEach(station => {
-        const card = document.createElement("div");
-        card.className = "station";
+    grouped[country].stations=[];
+    fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${country}`)
+    .then(res => res.json())
+    .then(data => {
+        data.forEach(station => {
+            if (!station.url_resolved) return;
+            const card = document.createElement("div");
+            card.className = "station";
 
-        card.innerHTML = `
-        <img class="station-icon" src="${station.favicon || 'default_icon.png'}" onerror="this.src='default_icon.png'">
-        <div>
-        <div class="station-name">${station.name}</div>
-        <div class="station-meta">${station.country} • ${station.bitrate} kbps</div>
-        </div>
-        `;
+            card.innerHTML = `
+            <img class="station-icon" src="${station.favicon || 'default_icon.png'}" onerror="this.src='default_icon.png'">
+            <div>
+            <div class="station-name">${station.name}</div>
+            <div class="station-meta">${station.country} • ${station.bitrate} kbps</div>
+            </div>
+            `;
 
-        card.onclick = () => {
-        playStation(station.url_resolved, station.name, station.favicon, station.country);
-        };
+            card.onclick = () => {
+            playStation(station.url_resolved, station.name, station.favicon, station.country);
+            };
 
-        container.appendChild(card);
-    });
+            container.appendChild(card);
+            grouped[country].stations.push({
+                name: station.name,
+                bitrate: station.bitrate,
+                favicon: station.favicon || "default_icon.png",
+                url_resolved: station.url_resolved
+            })
+        })
+    })
+    grouped[country].stationcount=grouped[country].stations.length;
 }
 
-loadAll();
+loadCountries();
 
 toggleBtn.onclick = () => {
     if (player.paused) {
