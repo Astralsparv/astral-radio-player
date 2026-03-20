@@ -75,7 +75,7 @@ function showCountries(){
 
     card.innerHTML=`<span class="favourite fa fa-star checked favourited"></span> Favourited Stations (${favouriteStations.length})`;
 
-    card.onclick=()=>showStations("favourite");
+    card.onclick=()=>showStations({favourites: true});
 
     container.appendChild(card);
 
@@ -85,46 +85,16 @@ function showCountries(){
 
         card.innerHTML=`<span class="flag">${countryFlag(country)}</span> ${grouped[country].name} (${grouped[country].stationCount})`;
 
-        card.onclick=()=>showStations(country);
+        card.onclick=()=>showStations({countrycode: country});
 
         container.appendChild(card);
     });
 }
 
-// country is iso
-function showStations(country,options){
-    if (options==null){ options={favourites: false} };
-    if (options.order==null){ options.order='name' };
-    const url=new URL(window.location.href);
-    url.searchParams.set('stations', country);
-    if (options.reverseorder){ url.searchParams.set('rev',1); }
-    if (options.favourites){ url.searchParams.set('favourites',1); }
-    if (options.query){ url.searchParams.set('query',options.query); }
-    window.history.pushState(null, '', url.toString());
-
-    document.getElementById('countries').classList.add('hide');
-    const container=document.getElementById("stations");
-    container.classList.remove('hide');
-    container.innerHTML="";
-
-    const back = document.createElement("button");
-    back.className = "back";
-    back.textContent="Back"
-
-    back.onclick = () => {
-        showCountries();
-        const url=new URL(window.location.href);
-        url.searchParams.delete('stations');
-        url.searchParams.delete('favourites');
-        url.searchParams.delete('query');
-        window.history.pushState(null, '', url.toString());
-    };
-
-    container.appendChild(back);
-
-    if (country=="favourite"){
-        favouriteStations.forEach(station => {
-            if (!station.url_resolved) return;
+function pushStation(container,station,options){
+    if (!station.url_resolved) return;
+        const favourited=stationIncludes(favouriteStations,station);
+        if ((!options.favourites) || (options.favourites && favourited)){
             const card = document.createElement("div");
             card.className = "station";
 
@@ -144,7 +114,7 @@ function showStations(country,options){
 
             const favourite=document.createElement('span');
 
-            if (stationIncludes(favouriteStations,station)){
+            if (favourited){
                 favourite.classList='favourite fa fa-star checked favourited';
             }else{
                 favourite.classList='favourite fa fa-star checked';
@@ -156,72 +126,79 @@ function showStations(country,options){
                 }else{
                     favourite.classList.remove('favourited');
                 }
-                showStations("favourite");
             }
 
             card.appendChild(favourite);
 
             container.appendChild(card);
+        }
+        if (options.countrycode){
+            grouped[options.countrycode].stations.push({
+                name: station.name,
+                bitrate: station.bitrate,
+                favicon: station.favicon || "default_icon.png",
+                url_resolved: station.url_resolved
+            })
+        }
+}
+
+// country is iso
+function showStations(options){
+    if (options==null){ options={favourites: false} };
+    if (options.order==null){ options.order='name' };
+    const newurl=new URL(window.location.href);
+    if (options.reverseorder){ newurl.searchParams.set('rev',1); }
+    if (options.favourites){ newurl.searchParams.set('favourites',1); }
+    if (options.query){ newurl.searchParams.set('query',options.query); }
+    if (options.countrycode){ newurl.searchParams.set('countrycode',options.countrycode); }
+    window.history.pushState(null, '', newurl.toString());
+
+    document.getElementById('countries').classList.add('hide');
+    const container=document.getElementById("stations");
+    container.classList.remove('hide');
+    container.innerHTML="";
+
+    const back = document.createElement("button");
+    back.className = "back";
+    back.textContent="Back"
+
+    back.onclick = () => {
+        showCountries();
+        const url=new URL(window.location.href);
+        url.searchParams.delete('countrycode');
+        url.searchParams.delete('favourites');
+        url.searchParams.delete('query');
+        url.searchParams.delete('order');
+        url.searchParams.delete('reverseorder');
+        window.history.pushState(null, '', url.toString());
+    };
+
+    container.appendChild(back);
+
+    let anything=false;
+    if (options.countrycode) { grouped[options.countrycode].stations=[]; anything=true; };
+    let url=`https://de1.api.radio-browser.info/json/stations/search?`;
+    if (options.countrycode){ url=`${url}countrycode=${encodeURIComponent(options.countrycode)}`; anything=true; }
+    if (options.query){ url=`${url}&name=${encodeURIComponent(options.query)}`; anything=true; }
+    url=`${url}&order=${encodeURIComponent(options.order)}`;
+    if (options.reverseorder){ url=`${url}&reverse=true;`; }
+
+    console.log(url);
+    if (options.favourites && !anything){
+        favouriteStations.forEach(station => {
+            pushStation(container,station,options)
         })
     }else{
-        grouped[country].stations=[];
-        let url=`https://de1.api.radio-browser.info/json/stations/search?countrycode=${country}`;
-        if (options.query){ url=`${url}&name=${encodeURIComponent(options.query)}`; }
-        url=`${url}&order=${encodeURIComponent(options.order)}`;
-        if (options.reverseorder){ url=`${url}&reverse=true;` }
         fetch(url)
         .then(res => res.json())
         .then(data => {
             data.forEach(station => {
-                if (!station.url_resolved) return;
-                const favourited=stationIncludes(favouriteStations,station);
-                if ((!options.favourites) || (options.favourites && favourited)){
-                    const card = document.createElement("div");
-                    card.className = "station";
-
-                    const play = document.createElement('div');
-                    play.classList='play';
-                    play.innerHTML = `
-                    <img class="station-icon" src="${station.favicon || 'default_icon.png'}" onerror="this.src='default_icon.png'">
-                    <div>
-                    <div class="station-name">${station.name}</div>
-                    <div class="station-meta"><span class="flag">${countryFlag(country)}</span> ${station.country} • ${station.bitrate} kbps</div>
-                    </div>
-                    `;
-                    play.onclick=function(){
-                        playStation(station.url_resolved,station.name,station.favicon,station.country,country);
-                    }
-                    card.appendChild(play);
-
-                    const favourite=document.createElement('span');
-
-                    if (favourited){
-                        favourite.classList='favourite fa fa-star checked favourited';
-                    }else{
-                        favourite.classList='favourite fa fa-star checked';
-                    }
-
-                    favourite.onclick=()=>{
-                        if (favouriteStation(station)){
-                            favourite.classList.add('favourited');
-                        }else{
-                            favourite.classList.remove('favourited');
-                        }
-                    }
-
-                    card.appendChild(favourite);
-
-                    container.appendChild(card);
-                }
-                grouped[country].stations.push({
-                    name: station.name,
-                    bitrate: station.bitrate,
-                    favicon: station.favicon || "default_icon.png",
-                    url_resolved: station.url_resolved
-                })
+                pushStation(container,station,options)
             })
         })
-        grouped[country].stationcount=grouped[country].stations.length;
+        if (options.countrycode){
+            grouped[options.countrycode].stationcount=grouped[options.countrycode].stations.length;
+        }
     }
 }
 
@@ -239,27 +216,34 @@ function handleQueryString(){
     if (queryHandled) return;
     queryHandled=true;
     const params = new URLSearchParams(window.location.search);
-    const country = params.get('stations');
+    let handle=false;
     let options={favourites: false};
+    let countrycode=params.get('countrycode');
+    if (countrycode){
+        options.countrycode=countrycode;
+        handle=true;
+    }
     let fav=params.get('favourites');
     if (fav){
         options.favourites=1;
+        handle=true;
     }
     let query=params.get('query');
     if (query){
         options.query=query;
+        handle=true;
     }
     let order=params.get('order');
     if (order){
         options.order=order;
+        handle=true;
     }
     let reverseorder=params.get('rev');
     if (reverseorder){
         options.reverseorder=1;
+        handle=true;
     }
-    if (country){
-        showStations(country,options);
-    }
+    if (handle) { showStations(options); }
 }
 
 loadCountries();
