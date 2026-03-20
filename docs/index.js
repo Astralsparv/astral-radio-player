@@ -92,9 +92,14 @@ function showCountries(){
 }
 
 // country is iso
-function showStations(country){
+function showStations(country,options){
+    if (options==null){ options={favourites: false} };
+    if (options.order==null){ options.order='name' };
     const url=new URL(window.location.href);
     url.searchParams.set('stations', country);
+    if (options.reverseorder){ url.searchParams.set('rev',1); }
+    if (options.favourites){ url.searchParams.set('favourites',1); }
+    if (options.query){ url.searchParams.set('query',options.query); }
     window.history.pushState(null, '', url.toString());
 
     document.getElementById('countries').classList.add('hide');
@@ -110,6 +115,8 @@ function showStations(country){
         showCountries();
         const url=new URL(window.location.href);
         url.searchParams.delete('stations');
+        url.searchParams.delete('favourites');
+        url.searchParams.delete('query');
         window.history.pushState(null, '', url.toString());
     };
 
@@ -158,47 +165,54 @@ function showStations(country){
         })
     }else{
         grouped[country].stations=[];
-        fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${country}?order=name`)
+        let url=`https://de1.api.radio-browser.info/json/stations/search?countrycode=${country}`;
+        if (options.query){ url=`${url}&name=${encodeURIComponent(options.query)}`; }
+        url=`${url}&order=${encodeURIComponent(options.order)}`;
+        if (options.reverseorder){ url=`${url}&reverse=true;` }
+        fetch(url)
         .then(res => res.json())
         .then(data => {
             data.forEach(station => {
                 if (!station.url_resolved) return;
-                const card = document.createElement("div");
-                card.className = "station";
+                const favourited=stationIncludes(favouriteStations,station);
+                if ((!options.favourites) || (options.favourites && favourited)){
+                    const card = document.createElement("div");
+                    card.className = "station";
 
-                const play = document.createElement('div');
-                play.classList='play';
-                play.innerHTML = `
-                <img class="station-icon" src="${station.favicon || 'default_icon.png'}" onerror="this.src='default_icon.png'">
-                <div>
-                <div class="station-name">${station.name}</div>
-                <div class="station-meta"><span class="flag">${countryFlag(country)}</span> ${station.country} • ${station.bitrate} kbps</div>
-                </div>
-                `;
-                play.onclick=function(){
-                    playStation(station.url_resolved,station.name,station.favicon,station.country,country);
-                }
-                card.appendChild(play);
-
-                const favourite=document.createElement('span');
-
-                if (stationIncludes(favouriteStations,station)){
-                    favourite.classList='favourite fa fa-star checked favourited';
-                }else{
-                    favourite.classList='favourite fa fa-star checked';
-                }
-
-                favourite.onclick=()=>{
-                    if (favouriteStation(station)){
-                        favourite.classList.add('favourited');
-                    }else{
-                        favourite.classList.remove('favourited');
+                    const play = document.createElement('div');
+                    play.classList='play';
+                    play.innerHTML = `
+                    <img class="station-icon" src="${station.favicon || 'default_icon.png'}" onerror="this.src='default_icon.png'">
+                    <div>
+                    <div class="station-name">${station.name}</div>
+                    <div class="station-meta"><span class="flag">${countryFlag(country)}</span> ${station.country} • ${station.bitrate} kbps</div>
+                    </div>
+                    `;
+                    play.onclick=function(){
+                        playStation(station.url_resolved,station.name,station.favicon,station.country,country);
                     }
+                    card.appendChild(play);
+
+                    const favourite=document.createElement('span');
+
+                    if (favourited){
+                        favourite.classList='favourite fa fa-star checked favourited';
+                    }else{
+                        favourite.classList='favourite fa fa-star checked';
+                    }
+
+                    favourite.onclick=()=>{
+                        if (favouriteStation(station)){
+                            favourite.classList.add('favourited');
+                        }else{
+                            favourite.classList.remove('favourited');
+                        }
+                    }
+
+                    card.appendChild(favourite);
+
+                    container.appendChild(card);
                 }
-
-                card.appendChild(favourite);
-
-                container.appendChild(card);
                 grouped[country].stations.push({
                     name: station.name,
                     bitrate: station.bitrate,
@@ -213,7 +227,11 @@ function showStations(country){
 
 // query strings
 /*
-stations=countryexactcode|"favourite"
+stations=countryexactcode|"favourite" -- show favourite stations, not country
+favourites=boolean -- show only favourites
+rev=anything -- reverse order
+query=string -- search a radio by name
+order=string -- order based on what the radio station has available for ordering, e.g: name, bitrate
 */
 
 let queryHandled=false;
@@ -222,8 +240,25 @@ function handleQueryString(){
     queryHandled=true;
     const params = new URLSearchParams(window.location.search);
     const country = params.get('stations');
+    let options={favourites: false};
+    let fav=params.get('favourites');
+    if (fav){
+        options.favourites=1;
+    }
+    let query=params.get('query');
+    if (query){
+        options.query=query;
+    }
+    let order=params.get('order');
+    if (order){
+        options.order=order;
+    }
+    let reverseorder=params.get('rev');
+    if (reverseorder){
+        options.reverseorder=1;
+    }
     if (country){
-        showStations(country);
+        showStations(country,options);
     }
 }
 
