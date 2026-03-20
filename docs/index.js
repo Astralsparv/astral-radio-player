@@ -43,7 +43,7 @@ function playStation(url, name, favicon, country, countrycode){
 function loadCountries(){
     document.getElementById("countries").innerHTML = "Loading...";
 
-    fetch("https://de1.api.radio-browser.info/json/countries")
+    fetch("https://de1.api.radio-browser.info/json/countries?order=name")
     .then(res => res.json())
     .then(data => {
         grouped = {};
@@ -164,7 +164,7 @@ function showStations(country){
         })
     }else{
         grouped[country].stations=[];
-        fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${country}`)
+        fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${country}?order=name`)
         .then(res => res.json())
         .then(data => {
             data.forEach(station => {
