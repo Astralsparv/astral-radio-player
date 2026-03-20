@@ -183,7 +183,6 @@ function showStations(options){
     url=`${url}&order=${encodeURIComponent(options.order)}`;
     if (options.reverseorder){ url=`${url}&reverse=true;`; }
 
-    console.log(url);
     if (options.favourites && !anything){
         favouriteStations.forEach(station => {
             pushStation(container,station,options)
@@ -211,10 +210,8 @@ query=string -- search a radio by name
 order=string -- order based on what the radio station has available for ordering, e.g: name, bitrate
 */
 
-let queryHandled=false;
-function handleQueryString(){
-    if (queryHandled) return;
-    queryHandled=true;
+
+function optionsFromQueryString(){
     const params = new URLSearchParams(window.location.search);
     let handle=false;
     let options={favourites: false};
@@ -243,7 +240,16 @@ function handleQueryString(){
         options.reverseorder=1;
         handle=true;
     }
-    if (handle) { showStations(options); }
+    return {options:options,handle:handle};
+}
+
+let queryHandled=false;
+function handleQueryString(){
+    if (queryHandled) return;
+    queryHandled=true;
+    
+    let data=optionsFromQueryString();
+    if (data.handle) { showStations(data.options); }
 }
 
 loadCountries();
@@ -257,3 +263,16 @@ toggleBtn.onclick = () => {
         toggleBtn.textContent = "▶️";
     }
 };
+
+// yuri!!! ⭐⭐⭐
+// no yaoi... 🤮🤮🤮
+
+document.getElementById('search_form').onsubmit=function(){
+    let search=document.getElementById('search').value;
+
+    let data=optionsFromQueryString();
+    data.options.query=search;
+
+    showStations(data.options);
+    return false;
+}
