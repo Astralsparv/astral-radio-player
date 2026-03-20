@@ -33,7 +33,6 @@ function favouriteStation(station){
     }else{
         favouriteStations.push(station);
     }
-    console.log(favouriteStations);
     localStorage.setItem("favouriteStations",JSON.stringify(favouriteStations));
     return nowFavourited;
 }

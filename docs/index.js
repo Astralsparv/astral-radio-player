@@ -155,12 +155,6 @@ function showStations(country){
             card.appendChild(favourite);
 
             container.appendChild(card);
-            grouped[country].stations.push({
-                name: station.name,
-                bitrate: station.bitrate,
-                favicon: station.favicon || "default_icon.png",
-                url_resolved: station.url_resolved
-            })
         })
     }else{
         grouped[country].stations=[];
